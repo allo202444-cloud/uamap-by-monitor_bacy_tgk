@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Карта целей от @monitor_bacy</title>
+    <link rel="icon" type="image/png" href="Avatarka.png">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #000; }
+        #map { height: 100vh; width: 100vw; z-index: 1; }
+
+        /* Слой водяных знаков */
+        #watermark-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 500; overflow: hidden;
+            display: flex; flex-wrap: wrap; justify-content: space-around;
+            align-content: space-around; opacity: 0.2; /* Прозрачность тут */
+        }
+        .wm-text { 
+            font-size: 22px; font-weight: bold; 
+            transform: rotate(-30deg); white-space: nowrap; padding: 40px;
+            transition: color 0.3s ease;
+        }
+
+        /* Авторизация */
+        #authOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #111; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 2000;
+        }
+        .auth-card { background: #1e1e1e; padding: 25px; border-radius: 15px; border: 2px solid #ff0000; text-align: center; color: white; width: 85%; max-width: 350px; }
+        .auth-input { background: #333; border: 1px solid #555; padding: 12px; color: white; border-radius: 8px; width: 90%; margin-bottom: 15px; text-align: center; font-size: 16px; outline: none; }
+        .auth-btn { background: #ff0000; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
+
+        /* UI */
+        .ui-element { transition: opacity 0.3s ease; }
+        .user-badge-container { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; }
+        .user-badge { background: rgba(0, 0, 0, 0.8); color: #fff; padding: 5px 15px; border-radius: 20px; border: 1px solid #ff0000; font-weight: bold; font-size: 12px; }
+
+        .btn-hide { position: absolute; top: 10px; left: 10px; z-index: 1001; width: 45px; height: 45px; border-radius: 50%; background: #ff0000; color: white; border: none; font-weight: bold; font-size: 18px; cursor: pointer; }
+
+        .stats-panel {
+            position: absolute; top: 65px; left: 10px;
+            background: rgba(0, 0, 0, 0.85); color: white;
+            padding: 8px; border-radius: 10px; border: 1px solid #444;
+            z-index: 1000; font-size: 9px; line-height: 1.1; pointer-events: none;
+        }
+        .stats-panel b { color: #ff0000; }
+
+        .controls-panel { position: absolute; top: 10px; right: 10px; display: none; flex-direction: column; gap: 2px; z-index: 1000; width: 135px; }
+        .btn { background: rgba(25, 25, 25, 0.95); color: white; border: 1px solid #444; padding: 4px 6px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 9px; display: flex; align-items: center; gap: 6px; text-transform: uppercase; }
+        .btn img { width: 14px; height: 14px; object-fit: contain; }
+        .btn.active { background: #ff0000; border-color: #fff; }
+        .btn-danger { border-color: #ff4444; color: #ff4444; justify-content: center; }
+
+        .settings-container { position: absolute; bottom: 20px; right: 10px; z-index: 1000; }
+        .settings-btn { background: #222; color: white; border: 1.5px solid #ff0000; width: 45px; height: 45px; border-radius: 50%; font-size: 20px; cursor: pointer; }
+        .settings-menu { display: none; position: absolute; bottom: 55px; right: 0; background: #1e1e1e; padding: 12px; border-radius: 10px; color: white; width: 210px; border: 1px solid #444; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+        
+        .wm-controls { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .wm-row { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+        .settings-menu input[type="text"] { background: #333; border: 1px solid #555; color: white; padding: 4px; border-radius: 4px; font-size: 11px; flex-grow: 1; }
+        .color-picker { width: 25px; height: 25px; border: none; background: none; cursor: pointer; padding: 0; }
+
+        .unit-icon { display: block; pointer-events: none; width: 28px !important; height: 28px !important; }
+        .selected-unit { outline: 2px solid #ff0000; outline-offset: 3px; border-radius: 2px; }
+        .leaflet-control-zoom { margin-top: 320px !important; margin-left: 10px !important; }
+    </style>
+</head>
+<body>
+
+    <div id="watermark-layer"></div>
+
+    <div id="authOverlay">
+        <div class="auth-card">
+            <h1 style="margin:0; font-size: 18px;">ДОБРО ПОЖАЛОВАТЬ НА КАРТУ</h1>
+            <p style="color:#aaa; font-size: 13px;">ОТ @monitor_bacy</p>
+            <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
+            <input type="text" id="nicknameInput" class="auth-input" placeholder="Никнейм">
+            <button class="auth-btn" onclick="login()">АВТОРИЗАЦИЯ</button>
+        </div>
+    </div>
+
+    <button class="btn-hide" onclick="toggleAllUI()">F</button>
+
+    <div class="stats-panel ui-element" id="statsPanel">
+        <div>Всего: <b id="count-all">0</b></div>
+        <div>Шахед v1: <b id="count-shahed">0</b></div>
+        <div>Шахед v2: <b id="count-shahed2">0</b></div>
+        <div>Развед.: <b id="count-scout">0</b></div>
+        <div>ZALA: <b id="count-zala">0</b></div>
+        <div>Supercam: <b id="count-supercam">0</b></div>
+        <div>Молния: <b id="count-molniya">0</b></div>
+        <div>КАБ: <b id="count-kab">0</b></div>
+        <div>Су-34: <b id="count-su34">0</b></div>
+        <div>Су-57: <b id="count-su57">0</b></div>
+        <div>Реакт.: <b id="count-r-shahed">0</b></div>
+    </div>
+
+    <div class="user-badge-container ui-element">
+        <div class="user-badge" id="displayNickname">GUEST</div>
+    </div>
+
+    <div class="controls-panel ui-element" id="mainControls">
+        <button class="btn" onclick="setActiveMode('shahed', 'photo_2026-02-14_17-20-17.png')"><img src="photo_2026-02-14_17-20-17.png"> ШАХЕД v1</button>
+        <button class="btn" onclick="setActiveMode('shahed2', 'shahed-2.png')"><img src="shahed-2.png"> ШАХЕД v2</button>
+        <button class="btn" onclick="setActiveMode('scout', 'orlan-10.png')"><img src="orlan-10.png"> РАЗВЕДЧИК</button>
+        <button class="btn" onclick="setActiveMode('zala', 'zala.png')"><img src="zala.png"> ZALA</button>
+        <button class="btn" onclick="setActiveMode('supercam', 'supercam.png')"><img src="supercam.png"> SUPERCAM</button>
+        <button class="btn" onclick="setActiveMode('molniya', 'molniya-op.png')"><img src="molniya-op.png"> МОЛНИЯ</button>
+        <button class="btn" onclick="setActiveMode('kab', 'Kabi.png')"><img src="Kabi.png"> КАБ</button>
+        <button class="btn" onclick="setActiveMode('su34', 'Su-34.png')"><img src="Su-34.png"> СУ-34</button>
+        <button class="btn" onclick="setActiveMode('su57', 'Su-57.png')"><img src="Su-57.png"> СУ-57</button>
+        <button class="btn" onclick="setActiveMode('r-shahed', 'reactiveshahed.png')"><img src="reactiveshahed.png"> РЕАКТИВ</button>
+        <hr style="width:100%; border:0; border-top:1px solid #444; margin: 1px 0;">
+        <button class="btn btn-danger" onclick="setActiveMode('move')">🔄 ПЕРЕНЕСТИ</button>
+        <button class="btn btn-danger" onclick="setActiveMode('delete')">🗑️ УДАЛИТЬ</button>
+    </div>
+
+    <div class="settings-container ui-element">
+        <div class="settings-menu" id="settingsMenu">
+            <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="toggleVector" checked onchange="updateSettings()"> Вектор</label>
+            <label style="display:flex; align-items:center; gap:8px; margin-top:8px;"><input type="checkbox" id="toggleHistory" checked onchange="updateSettings()"> След</label>
+            <hr style="border:0; border-top:1px solid #444; margin: 10px 0;">
+            
+            <div class="wm-controls">
+                <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="toggleWM" onchange="updateSettings()"> Водяной знак</label>
+                <div class="wm-row">
+                    <input type="text" id="wmTextInput" placeholder="Текст..." oninput="updateSettings()">
+                    <input type="color" id="wmColorInput" class="color-picker" value="#000000" oninput="updateSettings()">
+                </div>
+            </div>
+        </div>
+        <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map', { zoomControl: true }).setView([48.3794, 31.1656], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        let activeMode = null, activeIconUrl = '', currentUnit = null, movingUnit = null;
+        let showVectors = true, showHistory = true, uiVisible = true;
+        const units = [];
+
+        function login() {
+            const nick = document.getElementById('nicknameInput').value;
+            if (!nick.trim()) return;
+            document.getElementById('displayNickname').innerText = nick;
+            document.getElementById('authOverlay').style.display = 'none';
+            if (nick === 'admin bacy') document.getElementById('mainControls').style.display = 'flex';
+        }
+
+        function toggleAllUI() {
+            uiVisible = !uiVisible;
+            document.querySelectorAll('.ui-element').forEach(el => el.style.opacity = uiVisible ? '1' : '0');
+        }
+
+        function updateStats() {
+            const counts = { all: units.length, shahed: 0, shahed2: 0, scout: 0, zala: 0, supercam: 0, molniya: 0, kab: 0, su34: 0, su57: 0, 'r-shahed': 0 };
+            units.forEach(u => counts[u.type]++);
+            for (let key in counts) {
+                const el = document.getElementById('count-' + key);
+                if (el) el.innerText = counts[key];
+            }
+        }
+
+        function setActiveMode(mode, icon = '') {
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            if (activeMode === mode) { activeMode = null; activeIconUrl = ''; } 
+            else { activeMode = mode; activeIconUrl = icon; event.currentTarget.classList.add('active'); }
+            clearSelection();
+            movingUnit = null;
+        }
+
+        function clearSelection() {
+            if (currentUnit) {
+                const el = currentUnit.marker.getElement();
+                if (el) el.classList.remove('selected-unit');
+            }
+            currentUnit = null;
+        }
+
+        map.on('click', function(e) {
+            if (activeMode === 'move' && movingUnit) { processMove(e.latlng); return; }
+            if (activeIconUrl && !currentUnit) { createUnit(e.latlng, activeIconUrl, activeMode); } 
+            else if (currentUnit) { setUnitVector(currentUnit, e.latlng); clearSelection(); }
+        });
+
+        function createUnit(latlng, iconUrl, type) {
+            const icon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<img src="${iconUrl}" class="unit-icon">`,
+                iconSize: [28, 28], iconAnchor: [14, 14]
+            });
+            const marker = L.marker(latlng, { icon: icon }).addTo(map);
+            const line = L.polyline([latlng, latlng], { color: '#ff0000', weight: 3, dashArray: '10, 8', opacity: showVectors ? 1 : 0 }).addTo(map);
+            const unitObj = { id: Date.now(), marker, line, pos: latlng, type: type, history: [] };
+            
+            marker.on('click', (ev) => {
+                L.DomEvent.stopPropagation(ev);
+                if (activeMode === 'delete') {
+                    map.removeLayer(marker); map.removeLayer(line);
+                    unitObj.history.forEach(h => map.removeLayer(h));
+                    units.splice(units.indexOf(unitObj), 1);
+                    updateStats();
+                } else if (activeMode === 'move') { movingUnit = unitObj; } 
+                else {
+                    clearSelection(); currentUnit = unitObj;
+                    marker.getElement().classList.add('selected-unit');
+                    activeMode = null; activeIconUrl = '';
+                    document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+                }
+            });
+            units.push(unitObj); currentUnit = unitObj;
+            marker.on('add', () => marker.getElement().classList.add('selected-unit'));
+            updateStats();
+        }
+
+        function processMove(newLatLng) {
+            const oldPos = movingUnit.pos;
+            const traceBase = L.polyline([oldPos, newLatLng], { color: '#888', weight: 6, opacity: showHistory ? 0.75 : 0 }).addTo(map);
+            const traceTop = L.polyline([oldPos, newLatLng], { color: '#ff0000', weight: 3, opacity: showHistory ? 1 : 0 }).addTo(map);
+            movingUnit.history.push(traceBase, traceTop);
+            movingUnit.pos = newLatLng; movingUnit.marker.setLatLng(newLatLng);
+            movingUnit.line.setLatLngs([newLatLng, newLatLng]); movingUnit = null;
+        }
+
+        function setUnitVector(unit, targetLatlng) {
+            const angle = Math.atan2(targetLatlng.lng - unit.pos.lng, targetLatlng.lat - unit.pos.lat) * (180 / Math.PI);
+            const img = unit.marker.getElement().querySelector('.unit-icon');
+            if (img) img.style.transform = `rotate(${angle}deg)`;
+            unit.line.setLatLngs([unit.pos, targetLatlng]);
+        }
+
+        function toggleSettings() {
+            const menu = document.getElementById('settingsMenu');
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function updateSettings() {
+            showVectors = document.getElementById('toggleVector').checked;
+            showHistory = document.getElementById('toggleHistory').checked;
+            
+            // Настройка водяного знака
+            const wmVisible = document.getElementById('toggleWM').checked;
+            const wmText = document.getElementById('wmTextInput').value || "@monitor_bacy";
+            const wmColor = document.getElementById('wmColorInput').value;
+            const container = document.getElementById('watermark-layer');
+            container.style.display = wmVisible ? 'flex' : 'none';
+            
+            if (wmVisible) {
+                container.innerHTML = "";
+                for(let i=0; i<50; i++) {
+                    const span = document.createElement('span');
+                    span.className = 'wm-text';
+                    span.innerText = wmText;
+                    span.style.color = wmColor;
+                    container.appendChild(span);
+                }
+            }
+
+            units.forEach(u => {
+                u.line.setStyle({ opacity: showVectors ? 1 : 0 });
+                u.history.forEach(h => h.setStyle({ opacity: showHistory ? (h.options.weight > 4 ? 0.75 : 1) : 0 }));
+            });
+        }
+    </script>
+</body>
+</html>
