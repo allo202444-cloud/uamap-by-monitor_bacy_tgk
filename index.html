@@ -179,13 +179,39 @@
         function createUnit(latlng, iconUrl, type) { 
             const icon = L.divIcon({ 
                 className: 'custom-div-icon', 
-                html: `<img src="${iconUrl}" class="unit-icon" onerror="this.style.border='2px solid red'; console.log('Ошибка:', '${iconUrl}')">`, 
+                html: `<img src="${iconUrl}" class="unit-icon" onerror="this.style.border='2px solid red'">`, 
                 iconSize: [28, 28], iconAnchor: [14, 14] 
             }); 
-            const marker = L.marker(latlng, { icon: icon }).addTo(map); 
+            
+            const marker = L.marker(latlng, { icon: icon, draggable: true }).addTo(map); 
             const line = L.polyline([latlng, latlng], { color: '#ff0000', weight: 3, dashArray: '10, 8', opacity: showVectors ? 1 : 0 }).addTo(map); 
             const unitObj = { id: Date.now(), marker, line, pos: latlng, type: type, history: [] }; 
             
+            let dragStartLatLng = null;
+
+            marker.on('dragstart', function() {
+                dragStartLatLng = marker.getLatLng(); // Запоминаем, откуда начали тянуть
+            });
+
+            marker.on('drag', function(e) {
+                const newPos = e.target.getLatLng();
+                unitObj.pos = newPos;
+                const points = line.getLatLngs();
+                line.setLatLngs([newPos, points[1] || newPos]);
+            });
+
+            marker.on('dragend', function(e) {
+                const newLatLng = e.target.getLatLng();
+                if (dragStartLatLng) {
+                    // Рисуем след (историю) при завершении перетаскивания мышкой
+                    const traceBase = L.polyline([dragStartLatLng, newLatLng], { color: '#888', weight: 6, opacity: showHistory ? 0.75 : 0 }).addTo(map); 
+                    const traceTop = L.polyline([dragStartLatLng, newLatLng], { color: '#ff0000', weight: 3, opacity: showHistory ? 1 : 0 }).addTo(map); 
+                    unitObj.history.push(traceBase, traceTop);
+                }
+                unitObj.pos = newLatLng;
+                dragStartLatLng = null;
+            });
+
             marker.on('click', (ev) => { 
                 L.DomEvent.stopPropagation(ev); 
                 if (activeMode === 'delete') { 
