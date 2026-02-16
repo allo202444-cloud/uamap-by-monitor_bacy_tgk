@@ -69,6 +69,7 @@
     <div id="authOverlay">
         <div class="auth-card">
             <h1 style="margin:0; font-size: 18px;">ДОБРО ПОЖАЛОВАТЬ</h1>
+            <p style="margin: 5px 0 15px 0; font-size: 12px; color: #aaa;">Карта целей от @monitor_bacy</p>
             <input type="text" id="nicknameInput" class="auth-input" placeholder="Никнейм">
             <button class="auth-btn" onclick="login()">ВХОД</button>
         </div>
@@ -85,6 +86,7 @@
         <div>Supercam: <b id="count-supercam">0</b></div>
         <div>Молния: <b id="count-molniya">0</b></div>
         <div>КАБ: <b id="count-kab">0</b></div>
+        <div>Ланцет: <b id="count-lancet">0</b></div>
         <div>Су-34: <b id="count-su34">0</b></div>
         <div>Су-57: <b id="count-su57">0</b></div>
         <div>Реактив: <b id="count-r-shahed">0</b></div>
@@ -102,6 +104,7 @@
         <button class="btn" onclick="setActiveMode('supercam', 'sc.png')"><img src="sc.png"> SUPERCAM</button>
         <button class="btn" onclick="setActiveMode('molniya', 'mo.png')"><img src="mo.png"> МОЛНИЯ</button>
         <button class="btn" onclick="setActiveMode('kab', 'kab.png')"><img src="kab.png"> КАБ</button>
+        <button class="btn" onclick="setActiveMode('lancet', 'lan.png')"><img src="lan.png"> ЛАНЦЕТ</button>
         <button class="btn" onclick="setActiveMode('su34', 'su34.png')"><img src="su34.png"> СУ-34</button>
         <button class="btn" onclick="setActiveMode('su57', 'su57.png')"><img src="su57.png"> СУ-57</button>
         <button class="btn" onclick="setActiveMode('r-shahed', 'react.png')"><img src="react.png"> РЕАКТИВ</button>
@@ -150,7 +153,7 @@
         }
 
         function updateStats() { 
-            const counts = { all: units.length, shahed: 0, shahed2: 0, scout: 0, zala: 0, supercam: 0, molniya: 0, kab: 0, su34: 0, su57: 0, 'r-shahed': 0 }; 
+            const counts = { all: units.length, shahed: 0, shahed2: 0, scout: 0, zala: 0, supercam: 0, molniya: 0, kab: 0, lancet: 0, su34: 0, su57: 0, 'r-shahed': 0 }; 
             units.forEach(u => counts[u.type]++); 
             for (let key in counts) { const el = document.getElementById('count-' + key); if (el) el.innerText = counts[key]; } 
         }
