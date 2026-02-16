@@ -17,10 +17,7 @@
             display: flex; flex-wrap: wrap; justify-content: space-around;
             align-content: space-around; opacity: 0.2;
         }
-        .wm-text { 
-            font-size: 22px; font-weight: bold; 
-            transform: rotate(-30deg); white-space: nowrap; padding: 40px;
-        }
+        .wm-text { font-size: 22px; font-weight: bold; transform: rotate(-30deg); white-space: nowrap; padding: 40px; }
 
         /* Авторизация */
         #authOverlay {
@@ -55,14 +52,12 @@
         .settings-container { position: absolute; bottom: 20px; right: 10px; z-index: 1000; }
         .settings-btn { background: #222; color: white; border: 1.5px solid #ff0000; width: 45px; height: 45px; border-radius: 50%; font-size: 20px; cursor: pointer; }
         .settings-menu { display: none; position: absolute; bottom: 55px; right: 0; background: #1e1e1e; padding: 12px; border-radius: 10px; color: white; width: 210px; border: 1px solid #444; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
-        
         .wm-controls { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
         .wm-row { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
         .settings-menu input[type="text"] { background: #333; border: 1px solid #555; color: white; padding: 4px; border-radius: 4px; font-size: 11px; flex-grow: 1; }
         .color-picker { width: 25px; height: 25px; border: none; background: none; cursor: pointer; padding: 0; }
 
-        /* Иконки на карте */
-        .unit-icon { display: block; pointer-events: none; width: 28px !important; height: 28px !important; transition: transform 0.2s; }
+        .unit-icon { display: block; pointer-events: none; width: 28px !important; height: 28px !important; }
         .selected-unit { outline: 2px solid #ff0000; outline-offset: 3px; border-radius: 2px; }
         .leaflet-control-zoom { margin-top: 320px !important; margin-left: 10px !important; }
     </style>
@@ -74,8 +69,6 @@
     <div id="authOverlay">
         <div class="auth-card">
             <h1 style="margin:0; font-size: 18px;">ДОБРО ПОЖАЛОВАТЬ</h1>
-            <p style="color:#aaa; font-size: 13px;">ОТ @monitor_bacy</p>
-            <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
             <input type="text" id="nicknameInput" class="auth-input" placeholder="Никнейм">
             <button class="auth-btn" onclick="login()">ВХОД</button>
         </div>
@@ -102,16 +95,16 @@
     </div>
 
     <div class="controls-panel ui-element" id="mainControls">
-        <button class="btn" onclick="setActiveMode('shahed', 'shahed1.png')"><img src="shahed1.png"> ШАХЕД v1</button>
-        <button class="btn" onclick="setActiveMode('shahed2', 'shahed2.png')"><img src="shahed2.png"> ШАХЕД v2</button>
-        <button class="btn" onclick="setActiveMode('scout', 'orlan-10.png')"><img src="orlan-10.png"> РАЗВЕДЧИК</button>
+        <button class="btn" onclick="setActiveMode('shahed', 's1.png')"><img src="s1.png"> ШАХЕД v1</button>
+        <button class="btn" onclick="setActiveMode('shahed2', 's2.png')"><img src="s2.png"> ШАХЕД v2</button>
+        <button class="btn" onclick="setActiveMode('scout', 'orlan.png')"><img src="orlan.png"> РАЗВЕДЧИК</button>
         <button class="btn" onclick="setActiveMode('zala', 'zala.png')"><img src="zala.png"> ZALA</button>
-        <button class="btn" onclick="setActiveMode('supercam', 'supercam.png')"><img src="supercam.png"> SUPERCAM</button>
-        <button class="btn" onclick="setActiveMode('molniya', 'molniya-op.png')"><img src="molniya-op.png"> МОЛНИЯ</button>
+        <button class="btn" onclick="setActiveMode('supercam', 'sc.png')"><img src="sc.png"> SUPERCAM</button>
+        <button class="btn" onclick="setActiveMode('molniya', 'mo.png')"><img src="mo.png"> МОЛНИЯ</button>
         <button class="btn" onclick="setActiveMode('kab', 'kab.png')"><img src="kab.png"> КАБ</button>
         <button class="btn" onclick="setActiveMode('su34', 'su34.png')"><img src="su34.png"> СУ-34</button>
         <button class="btn" onclick="setActiveMode('su57', 'su57.png')"><img src="su57.png"> СУ-57</button>
-        <button class="btn" onclick="setActiveMode('r-shahed', 'reactive.png')"><img src="reactive.png"> РЕАКТИВ</button>
+        <button class="btn" onclick="setActiveMode('r-shahed', 'react.png')"><img src="react.png"> РЕАКТИВ</button>
         <hr style="width:100%; border:0; border-top:1px solid #444; margin: 1px 0;">
         <button class="btn btn-danger" onclick="setActiveMode('move')">🔄 ПЕРЕНЕСТИ</button>
         <button class="btn btn-danger" onclick="setActiveMode('delete')">🗑️ УДАЛИТЬ</button>
@@ -140,130 +133,112 @@
         const map = L.map('map', { zoomControl: true }).setView([48.3794, 31.1656], 6);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        let activeMode = null, activeIconUrl = '', currentUnit = null, movingUnit = null;
-        let showVectors = true, showHistory = true, uiVisible = true;
+        let activeMode = null, activeIconUrl = '', currentUnit = null, movingUnit = null, showVectors = true, showHistory = true, uiVisible = true;
         const units = [];
 
-        function login() {
-            const nick = document.getElementById('nicknameInput').value;
-            if (!nick.trim()) return;
-            document.getElementById('displayNickname').innerText = nick;
-            document.getElementById('authOverlay').style.display = 'none';
-            if (nick === 'admin bacy') document.getElementById('mainControls').style.display = 'flex';
+        function login() { 
+            const nick = document.getElementById('nicknameInput').value; 
+            if (!nick.trim()) return; 
+            document.getElementById('displayNickname').innerText = nick; 
+            document.getElementById('authOverlay').style.display = 'none'; 
+            if (nick === 'admin bacy') document.getElementById('mainControls').style.display = 'flex'; 
         }
 
-        function toggleAllUI() {
-            uiVisible = !uiVisible;
-            document.querySelectorAll('.ui-element').forEach(el => el.style.opacity = uiVisible ? '1' : '0');
+        function toggleAllUI() { 
+            uiVisible = !uiVisible; 
+            document.querySelectorAll('.ui-element').forEach(el => el.style.opacity = uiVisible ? '1' : '0'); 
         }
 
-        function updateStats() {
-            const counts = { all: units.length, shahed: 0, shahed2: 0, scout: 0, zala: 0, supercam: 0, molniya: 0, kab: 0, su34: 0, su57: 0, 'r-shahed': 0 };
-            units.forEach(u => counts[u.type]++);
-            for (let key in counts) {
-                const el = document.getElementById('count-' + key);
-                if (el) el.innerText = counts[key];
-            }
+        function updateStats() { 
+            const counts = { all: units.length, shahed: 0, shahed2: 0, scout: 0, zala: 0, supercam: 0, molniya: 0, kab: 0, su34: 0, su57: 0, 'r-shahed': 0 }; 
+            units.forEach(u => counts[u.type]++); 
+            for (let key in counts) { const el = document.getElementById('count-' + key); if (el) el.innerText = counts[key]; } 
         }
 
-        function setActiveMode(mode, icon = '') {
-            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+        function setActiveMode(mode, icon = '') { 
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active')); 
             if (activeMode === mode && !icon) { activeMode = null; activeIconUrl = ''; } 
-            else { activeMode = mode; activeIconUrl = icon; event.currentTarget.classList.add('active'); }
-            clearSelection();
-            movingUnit = null;
+            else { activeMode = mode; activeIconUrl = icon; event.currentTarget.classList.add('active'); } 
+            clearSelection(); movingUnit = null; 
         }
 
-        function clearSelection() {
-            if (currentUnit) {
-                const el = currentUnit.marker.getElement();
-                if (el) el.classList.remove('selected-unit');
-            }
-            currentUnit = null;
+        function clearSelection() { 
+            if (currentUnit) { const el = currentUnit.marker.getElement(); if (el) el.classList.remove('selected-unit'); } 
+            currentUnit = null; 
         }
 
-        map.on('click', function(e) {
-            if (activeMode === 'move' && movingUnit) { processMove(e.latlng); return; }
+        map.on('click', function(e) { 
+            if (activeMode === 'move' && movingUnit) { processMove(e.latlng); return; } 
             if (activeIconUrl && !currentUnit) { createUnit(e.latlng, activeIconUrl, activeMode); } 
-            else if (currentUnit) { setUnitVector(currentUnit, e.latlng); clearSelection(); }
+            else if (currentUnit) { setUnitVector(currentUnit, e.latlng); clearSelection(); } 
         });
 
-        function createUnit(latlng, iconUrl, type) {
-            const icon = L.divIcon({
-                className: 'custom-div-icon',
-                html: `<img src="${iconUrl}" class="unit-icon" onerror="this.src='https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png'">`,
-                iconSize: [28, 28], iconAnchor: [14, 14]
-            });
-            const marker = L.marker(latlng, { icon: icon }).addTo(map);
-            const line = L.polyline([latlng, latlng], { color: '#ff0000', weight: 3, dashArray: '10, 8', opacity: showVectors ? 1 : 0 }).addTo(map);
-            const unitObj = { id: Date.now(), marker, line, pos: latlng, type: type, history: [] };
+        function createUnit(latlng, iconUrl, type) { 
+            const icon = L.divIcon({ 
+                className: 'custom-div-icon', 
+                html: `<img src="${iconUrl}" class="unit-icon" onerror="this.style.border='2px solid red'; console.log('Ошибка:', '${iconUrl}')">`, 
+                iconSize: [28, 28], iconAnchor: [14, 14] 
+            }); 
+            const marker = L.marker(latlng, { icon: icon }).addTo(map); 
+            const line = L.polyline([latlng, latlng], { color: '#ff0000', weight: 3, dashArray: '10, 8', opacity: showVectors ? 1 : 0 }).addTo(map); 
+            const unitObj = { id: Date.now(), marker, line, pos: latlng, type: type, history: [] }; 
             
-            marker.on('click', (ev) => {
-                L.DomEvent.stopPropagation(ev);
-                if (activeMode === 'delete') {
-                    map.removeLayer(marker); map.removeLayer(line);
-                    unitObj.history.forEach(h => map.removeLayer(h));
-                    units.splice(units.indexOf(unitObj), 1);
-                    updateStats();
-                } else if (activeMode === 'move') { movingUnit = unitObj; } 
-                else {
-                    clearSelection(); currentUnit = unitObj;
-                    marker.getElement().classList.add('selected-unit');
-                    activeMode = null; activeIconUrl = '';
-                    document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-                }
-            });
-            units.push(unitObj); currentUnit = unitObj;
-            marker.on('add', () => marker.getElement().classList.add('selected-unit'));
-            updateStats();
+            marker.on('click', (ev) => { 
+                L.DomEvent.stopPropagation(ev); 
+                if (activeMode === 'delete') { 
+                    map.removeLayer(marker); map.removeLayer(line); unitObj.history.forEach(h => map.removeLayer(h)); 
+                    units.splice(units.indexOf(unitObj), 1); updateStats(); 
+                } else if (activeMode === 'move') { 
+                    movingUnit = unitObj; 
+                } else { 
+                    clearSelection(); currentUnit = unitObj; marker.getElement().classList.add('selected-unit'); 
+                    activeMode = null; activeIconUrl = ''; document.querySelectorAll('.btn').forEach(b => b.classList.remove('active')); 
+                } 
+            }); 
+            units.push(unitObj); currentUnit = unitObj; updateStats(); 
         }
 
-        function processMove(newLatLng) {
-            const oldPos = movingUnit.pos;
-            const traceBase = L.polyline([oldPos, newLatLng], { color: '#888', weight: 6, opacity: showHistory ? 0.75 : 0 }).addTo(map);
-            const traceTop = L.polyline([oldPos, newLatLng], { color: '#ff0000', weight: 3, opacity: showHistory ? 1 : 0 }).addTo(map);
-            movingUnit.history.push(traceBase, traceTop);
-            movingUnit.pos = newLatLng; movingUnit.marker.setLatLng(newLatLng);
-            movingUnit.line.setLatLngs([newLatLng, newLatLng]); movingUnit = null;
+        function processMove(newLatLng) { 
+            const oldPos = movingUnit.pos; 
+            const traceBase = L.polyline([oldPos, newLatLng], { color: '#888', weight: 6, opacity: showHistory ? 0.75 : 0 }).addTo(map); 
+            const traceTop = L.polyline([oldPos, newLatLng], { color: '#ff0000', weight: 3, opacity: showHistory ? 1 : 0 }).addTo(map); 
+            movingUnit.history.push(traceBase, traceTop); 
+            movingUnit.pos = newLatLng; movingUnit.marker.setLatLng(newLatLng); 
+            movingUnit.line.setLatLngs([newLatLng, newLatLng]); movingUnit = null; 
         }
 
-        function setUnitVector(unit, targetLatlng) {
-            const angle = Math.atan2(targetLatlng.lng - unit.pos.lng, targetLatlng.lat - unit.pos.lat) * (180 / Math.PI);
-            const img = unit.marker.getElement().querySelector('.unit-icon');
-            if (img) img.style.transform = `rotate(${angle}deg)`;
-            unit.line.setLatLngs([unit.pos, targetLatlng]);
+        function setUnitVector(unit, targetLatlng) { 
+            const angle = Math.atan2(targetLatlng.lng - unit.pos.lng, targetLatlng.lat - unit.pos.lat) * (180 / Math.PI); 
+            const img = unit.marker.getElement().querySelector('.unit-icon'); 
+            if (img) img.style.transform = `rotate(${angle}deg)`; 
+            unit.line.setLatLngs([unit.pos, targetLatlng]); 
         }
 
-        function toggleSettings() {
-            const menu = document.getElementById('settingsMenu');
-            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        function toggleSettings() { 
+            const menu = document.getElementById('settingsMenu'); 
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block'; 
         }
 
-        function updateSettings() {
-            showVectors = document.getElementById('toggleVector').checked;
-            showHistory = document.getElementById('toggleHistory').checked;
-            
-            const wmVisible = document.getElementById('toggleWM').checked;
-            const wmText = document.getElementById('wmTextInput').value || "@monitor_bacy";
-            const wmColor = document.getElementById('wmColorInput').value;
-            const container = document.getElementById('watermark-layer');
-            container.style.display = wmVisible ? 'flex' : 'none';
-            
-            if (wmVisible) {
-                container.innerHTML = "";
-                for(let i=0; i<60; i++) {
-                    const span = document.createElement('span');
-                    span.className = 'wm-text';
-                    span.innerText = wmText;
-                    span.style.color = wmColor;
-                    container.appendChild(span);
-                }
-            }
-
-            units.forEach(u => {
-                u.line.setStyle({ opacity: showVectors ? 1 : 0 });
-                u.history.forEach(h => h.setStyle({ opacity: showHistory ? (h.options.weight > 4 ? 0.75 : 1) : 0 }));
-            });
+        function updateSettings() { 
+            showVectors = document.getElementById('toggleVector').checked; 
+            showHistory = document.getElementById('toggleHistory').checked; 
+            const wmVisible = document.getElementById('toggleWM').checked; 
+            const wmText = document.getElementById('wmTextInput').value || "@monitor_bacy"; 
+            const wmColor = document.getElementById('wmColorInput').value; 
+            const container = document.getElementById('watermark-layer'); 
+            container.style.display = wmVisible ? 'flex' : 'none'; 
+            if (wmVisible) { 
+                container.innerHTML = ""; 
+                for(let i=0; i<60; i++) { 
+                    const span = document.createElement('span'); 
+                    span.className = 'wm-text'; span.innerText = wmText; span.style.color = wmColor; 
+                    container.appendChild(span); 
+                } 
+            } 
+            units.forEach(u => { 
+                u.line.setStyle({ opacity: showVectors ? 1 : 0 }); 
+                u.history.forEach(h => h.setStyle({ opacity: showHistory ? (h.options.weight > 4 ? 0.75 : 1) : 0 })); 
+            }); 
         }
     </script>
 </body>
