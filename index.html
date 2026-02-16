@@ -10,6 +10,16 @@
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #000; }
         #map { height: 100vh; width: 100vw; z-index: 1; }
 
+        /* Стили для переключателя слоев */
+        .leaflet-control-layers {
+            background: rgba(30, 30, 30, 0.9) !important;
+            color: white !important;
+            border: 1px solid #ff0000 !important;
+            border-radius: 8px !important;
+            font-size: 11px !important;
+        }
+        .leaflet-control-layers-list { padding: 5px; }
+
         /* Водяной знак */
         #watermark-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -59,7 +69,8 @@
 
         .unit-icon { display: block; pointer-events: none; width: 28px !important; height: 28px !important; }
         .selected-unit { outline: 2px solid #ff0000; outline-offset: 3px; border-radius: 2px; }
-        .leaflet-control-zoom { margin-top: 320px !important; margin-left: 10px !important; }
+        
+        .leaflet-control-zoom { margin-bottom: 120px !important; }
     </style>
 </head>
 <body>
@@ -133,8 +144,23 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const map = L.map('map', { zoomControl: true }).setView([48.3794, 31.1656], 6);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        // СЛОИ КАРТЫ
+        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: 'OSM' });
+        const googleSat = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], attribution: 'Google Sat' });
+        const googleHybrid = L.tileLayer('http://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'], attribution: 'Google Hybrid' });
+        const darkMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: 'Dark' });
+        const lightMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: 'Light' });
+
+        const map = L.map('map', { zoomControl: true, layers: [darkMap] }).setView([48.3794, 31.1656], 6);
+
+        const baseMaps = {
+            "🌑 Темная": darkMap,
+            "🛰️ Спутник": googleSat,
+            "🗺️ Гибрид": googleHybrid,
+            "⚪ Светлая": lightMap,
+            "🌳 OSM": osm
+        };
+        L.control.layers(baseMaps, null, { position: 'bottomleft' }).addTo(map);
 
         let activeMode = null, activeIconUrl = '', currentUnit = null, movingUnit = null, showVectors = true, showHistory = true, uiVisible = true;
         const units = [];
@@ -150,6 +176,7 @@
         function toggleAllUI() { 
             uiVisible = !uiVisible; 
             document.querySelectorAll('.ui-element').forEach(el => el.style.opacity = uiVisible ? '1' : '0'); 
+            document.querySelector('.leaflet-control-layers').style.display = uiVisible ? 'block' : 'none';
         }
 
         function updateStats() { 
@@ -189,24 +216,21 @@
             
             let dragStartLatLng = null;
 
-            marker.on('dragstart', function() {
-                dragStartLatLng = marker.getLatLng(); // Запоминаем, откуда начали тянуть
-            });
+            marker.on('dragstart', () => { dragStartLatLng = marker.getLatLng(); });
 
-            marker.on('drag', function(e) {
+            marker.on('drag', (e) => {
                 const newPos = e.target.getLatLng();
                 unitObj.pos = newPos;
-                const points = line.getLatLngs();
-                line.setLatLngs([newPos, points[1] || newPos]);
+                const pts = line.getLatLngs();
+                line.setLatLngs([newPos, pts[1] || newPos]);
             });
 
-            marker.on('dragend', function(e) {
+            marker.on('dragend', (e) => {
                 const newLatLng = e.target.getLatLng();
                 if (dragStartLatLng) {
-                    // Рисуем след (историю) при завершении перетаскивания мышкой
-                    const traceBase = L.polyline([dragStartLatLng, newLatLng], { color: '#888', weight: 6, opacity: showHistory ? 0.75 : 0 }).addTo(map); 
-                    const traceTop = L.polyline([dragStartLatLng, newLatLng], { color: '#ff0000', weight: 3, opacity: showHistory ? 1 : 0 }).addTo(map); 
-                    unitObj.history.push(traceBase, traceTop);
+                    const b = L.polyline([dragStartLatLng, newLatLng], { color: '#888', weight: 6, opacity: showHistory ? 0.75 : 0 }).addTo(map); 
+                    const t = L.polyline([dragStartLatLng, newLatLng], { color: '#ff0000', weight: 3, opacity: showHistory ? 1 : 0 }).addTo(map); 
+                    unitObj.history.push(b, t);
                 }
                 unitObj.pos = newLatLng;
                 dragStartLatLng = null;
