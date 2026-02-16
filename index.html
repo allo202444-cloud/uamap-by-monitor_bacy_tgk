@@ -10,17 +10,16 @@
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #000; }
         #map { height: 100vh; width: 100vw; z-index: 1; }
 
-        /* Слой водяных знаков */
+        /* Водяной знак */
         #watermark-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 500; overflow: hidden;
             display: flex; flex-wrap: wrap; justify-content: space-around;
-            align-content: space-around; opacity: 0.2; /* Прозрачность тут */
+            align-content: space-around; opacity: 0.2;
         }
         .wm-text { 
             font-size: 22px; font-weight: bold; 
             transform: rotate(-30deg); white-space: nowrap; padding: 40px;
-            transition: color 0.3s ease;
         }
 
         /* Авторизация */
@@ -37,7 +36,6 @@
         .ui-element { transition: opacity 0.3s ease; }
         .user-badge-container { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; }
         .user-badge { background: rgba(0, 0, 0, 0.8); color: #fff; padding: 5px 15px; border-radius: 20px; border: 1px solid #ff0000; font-weight: bold; font-size: 12px; }
-
         .btn-hide { position: absolute; top: 10px; left: 10px; z-index: 1001; width: 45px; height: 45px; border-radius: 50%; background: #ff0000; color: white; border: none; font-weight: bold; font-size: 18px; cursor: pointer; }
 
         .stats-panel {
@@ -48,11 +46,11 @@
         }
         .stats-panel b { color: #ff0000; }
 
-        .controls-panel { position: absolute; top: 10px; right: 10px; display: none; flex-direction: column; gap: 2px; z-index: 1000; width: 135px; }
-        .btn { background: rgba(25, 25, 25, 0.95); color: white; border: 1px solid #444; padding: 4px 6px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 9px; display: flex; align-items: center; gap: 6px; text-transform: uppercase; }
-        .btn img { width: 14px; height: 14px; object-fit: contain; }
+        .controls-panel { position: absolute; top: 10px; right: 10px; display: none; flex-direction: column; gap: 2px; z-index: 1000; width: 140px; }
+        .btn { background: rgba(25, 25, 25, 0.95); color: white; border: 1px solid #444; padding: 5px 6px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 9px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
+        .btn img { width: 16px; height: 16px; object-fit: contain; pointer-events: none; }
         .btn.active { background: #ff0000; border-color: #fff; }
-        .btn-danger { border-color: #ff4444; color: #ff4444; justify-content: center; }
+        .btn-danger { border-color: #ff4444; color: #ff4444; justify-content: center; margin-top: 2px; }
 
         .settings-container { position: absolute; bottom: 20px; right: 10px; z-index: 1000; }
         .settings-btn { background: #222; color: white; border: 1.5px solid #ff0000; width: 45px; height: 45px; border-radius: 50%; font-size: 20px; cursor: pointer; }
@@ -63,7 +61,8 @@
         .settings-menu input[type="text"] { background: #333; border: 1px solid #555; color: white; padding: 4px; border-radius: 4px; font-size: 11px; flex-grow: 1; }
         .color-picker { width: 25px; height: 25px; border: none; background: none; cursor: pointer; padding: 0; }
 
-        .unit-icon { display: block; pointer-events: none; width: 28px !important; height: 28px !important; }
+        /* Иконки на карте */
+        .unit-icon { display: block; pointer-events: none; width: 28px !important; height: 28px !important; transition: transform 0.2s; }
         .selected-unit { outline: 2px solid #ff0000; outline-offset: 3px; border-radius: 2px; }
         .leaflet-control-zoom { margin-top: 320px !important; margin-left: 10px !important; }
     </style>
@@ -74,11 +73,11 @@
 
     <div id="authOverlay">
         <div class="auth-card">
-            <h1 style="margin:0; font-size: 18px;">ДОБРО ПОЖАЛОВАТЬ НА КАРТУ</h1>
+            <h1 style="margin:0; font-size: 18px;">ДОБРО ПОЖАЛОВАТЬ</h1>
             <p style="color:#aaa; font-size: 13px;">ОТ @monitor_bacy</p>
             <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
             <input type="text" id="nicknameInput" class="auth-input" placeholder="Никнейм">
-            <button class="auth-btn" onclick="login()">АВТОРИЗАЦИЯ</button>
+            <button class="auth-btn" onclick="login()">ВХОД</button>
         </div>
     </div>
 
@@ -88,14 +87,14 @@
         <div>Всего: <b id="count-all">0</b></div>
         <div>Шахед v1: <b id="count-shahed">0</b></div>
         <div>Шахед v2: <b id="count-shahed2">0</b></div>
-        <div>Развед.: <b id="count-scout">0</b></div>
+        <div>Разведчик: <b id="count-scout">0</b></div>
         <div>ZALA: <b id="count-zala">0</b></div>
         <div>Supercam: <b id="count-supercam">0</b></div>
         <div>Молния: <b id="count-molniya">0</b></div>
         <div>КАБ: <b id="count-kab">0</b></div>
         <div>Су-34: <b id="count-su34">0</b></div>
         <div>Су-57: <b id="count-su57">0</b></div>
-        <div>Реакт.: <b id="count-r-shahed">0</b></div>
+        <div>Реактив: <b id="count-r-shahed">0</b></div>
     </div>
 
     <div class="user-badge-container ui-element">
@@ -103,16 +102,16 @@
     </div>
 
     <div class="controls-panel ui-element" id="mainControls">
-        <button class="btn" onclick="setActiveMode('shahed', 'photo_2026-02-14_17-20-17.png')"><img src="photo_2026-02-14_17-20-17.png"> ШАХЕД v1</button>
-        <button class="btn" onclick="setActiveMode('shahed2', 'shahed-2.png')"><img src="shahed-2.png"> ШАХЕД v2</button>
+        <button class="btn" onclick="setActiveMode('shahed', 'shahed1.png')"><img src="shahed1.png"> ШАХЕД v1</button>
+        <button class="btn" onclick="setActiveMode('shahed2', 'shahed2.png')"><img src="shahed2.png"> ШАХЕД v2</button>
         <button class="btn" onclick="setActiveMode('scout', 'orlan-10.png')"><img src="orlan-10.png"> РАЗВЕДЧИК</button>
         <button class="btn" onclick="setActiveMode('zala', 'zala.png')"><img src="zala.png"> ZALA</button>
         <button class="btn" onclick="setActiveMode('supercam', 'supercam.png')"><img src="supercam.png"> SUPERCAM</button>
         <button class="btn" onclick="setActiveMode('molniya', 'molniya-op.png')"><img src="molniya-op.png"> МОЛНИЯ</button>
-        <button class="btn" onclick="setActiveMode('kab', 'Kabi.png')"><img src="Kabi.png"> КАБ</button>
-        <button class="btn" onclick="setActiveMode('su34', 'Su-34.png')"><img src="Su-34.png"> СУ-34</button>
-        <button class="btn" onclick="setActiveMode('su57', 'Su-57.png')"><img src="Su-57.png"> СУ-57</button>
-        <button class="btn" onclick="setActiveMode('r-shahed', 'reactiveshahed.png')"><img src="reactiveshahed.png"> РЕАКТИВ</button>
+        <button class="btn" onclick="setActiveMode('kab', 'kab.png')"><img src="kab.png"> КАБ</button>
+        <button class="btn" onclick="setActiveMode('su34', 'su34.png')"><img src="su34.png"> СУ-34</button>
+        <button class="btn" onclick="setActiveMode('su57', 'su57.png')"><img src="su57.png"> СУ-57</button>
+        <button class="btn" onclick="setActiveMode('r-shahed', 'reactive.png')"><img src="reactive.png"> РЕАКТИВ</button>
         <hr style="width:100%; border:0; border-top:1px solid #444; margin: 1px 0;">
         <button class="btn btn-danger" onclick="setActiveMode('move')">🔄 ПЕРЕНЕСТИ</button>
         <button class="btn btn-danger" onclick="setActiveMode('delete')">🗑️ УДАЛИТЬ</button>
@@ -123,7 +122,6 @@
             <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="toggleVector" checked onchange="updateSettings()"> Вектор</label>
             <label style="display:flex; align-items:center; gap:8px; margin-top:8px;"><input type="checkbox" id="toggleHistory" checked onchange="updateSettings()"> След</label>
             <hr style="border:0; border-top:1px solid #444; margin: 10px 0;">
-            
             <div class="wm-controls">
                 <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" id="toggleWM" onchange="updateSettings()"> Водяной знак</label>
                 <div class="wm-row">
@@ -170,7 +168,7 @@
 
         function setActiveMode(mode, icon = '') {
             document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-            if (activeMode === mode) { activeMode = null; activeIconUrl = ''; } 
+            if (activeMode === mode && !icon) { activeMode = null; activeIconUrl = ''; } 
             else { activeMode = mode; activeIconUrl = icon; event.currentTarget.classList.add('active'); }
             clearSelection();
             movingUnit = null;
@@ -193,7 +191,7 @@
         function createUnit(latlng, iconUrl, type) {
             const icon = L.divIcon({
                 className: 'custom-div-icon',
-                html: `<img src="${iconUrl}" class="unit-icon">`,
+                html: `<img src="${iconUrl}" class="unit-icon" onerror="this.src='https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png'">`,
                 iconSize: [28, 28], iconAnchor: [14, 14]
             });
             const marker = L.marker(latlng, { icon: icon }).addTo(map);
@@ -245,7 +243,6 @@
             showVectors = document.getElementById('toggleVector').checked;
             showHistory = document.getElementById('toggleHistory').checked;
             
-            // Настройка водяного знака
             const wmVisible = document.getElementById('toggleWM').checked;
             const wmText = document.getElementById('wmTextInput').value || "@monitor_bacy";
             const wmColor = document.getElementById('wmColorInput').value;
@@ -254,7 +251,7 @@
             
             if (wmVisible) {
                 container.innerHTML = "";
-                for(let i=0; i<50; i++) {
+                for(let i=0; i<60; i++) {
                     const span = document.createElement('span');
                     span.className = 'wm-text';
                     span.innerText = wmText;
